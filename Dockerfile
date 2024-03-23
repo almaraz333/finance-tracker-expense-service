@@ -1,4 +1,4 @@
-FROM golang:1.22.1
+FROM golang:1.22.1 AS builder
 
 WORKDIR /app
 
@@ -12,4 +12,10 @@ EXPOSE 50051
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o /main
 
-CMD ["/main"]
+FROM alpine:latest
+
+WORKDIR /root/
+
+COPY --from=builder /main .
+
+CMD ["/root/main"]
