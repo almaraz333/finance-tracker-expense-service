@@ -19,6 +19,44 @@ type server struct {
 	mutex sync.Mutex
 }
 
+func (s *server) GetExpenses(ctx context.Context, _ *pb.Empty) (*pb.GetExpensesResponse, error) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	var res = []*pb.ExpenseObject{}
+
+	rows, err := s.db.Query("select * from expenses")
+	defer rows.Close()
+
+	for rows.Next() {
+		var category string
+		var amount float64
+		var createdAt string
+		var id int32
+
+		err = rows.Scan(&id, &createdAt, &category, &amount)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		res = append(res, &pb.ExpenseObject{
+			Category:  category,
+			CreatedAt: createdAt,
+			Amount:    amount,
+			Id:        id,
+		})
+	}
+
+	err = rows.Err()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return &pb.GetExpensesResponse{
+		Expenses: res,
+	}, nil
+}
+
 func (s *server) CreateExpense(ctx context.Context, in *pb.CreateExenseRequest) (*pb.CreateExpenseResponse, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -40,30 +78,6 @@ func (s *server) CreateExpense(ctx context.Context, in *pb.CreateExenseRequest) 
 
 	err = tx.Commit()
 
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	rows, err := s.db.Query("select * from expenses")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-		var id int
-		var createdAt string
-		var category string
-		var amount string
-
-		err = rows.Scan(&id, &createdAt, &category, &amount)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println(id, createdAt, category, amount)
-	}
-	err = rows.Err()
 	if err != nil {
 		log.Fatal(err)
 	}
