@@ -19,6 +19,37 @@ type server struct {
 	mutex sync.Mutex
 }
 
+func (s *server) DeleteExpense(ctx context.Context, in *pb.DeleteExpenseRequest) (*pb.DeleteExpenseResponse, error) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	stmt, err := tx.Prepare("delete from expenses where id=?")
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	log.Printf("Deleting Expense with id: %v", in.GetId())
+
+	defer stmt.Close()
+
+	stmt.Exec(in.GetId())
+
+	err = tx.Commit()
+
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	return &pb.DeleteExpenseResponse{
+			Id: in.GetId(),
+		},
+		nil
+}
+
 func (s *server) GetExpenses(ctx context.Context, _ *pb.Empty) (*pb.GetExpensesResponse, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -55,6 +86,37 @@ func (s *server) GetExpenses(ctx context.Context, _ *pb.Empty) (*pb.GetExpensesR
 	return &pb.GetExpensesResponse{
 		Expenses: res,
 	}, nil
+}
+
+func (s *server) UpdateExpense(ctx context.Context, in *pb.UpdateExpenseRequest) (*pb.UpdateExpenseResponse, error) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	log.Printf("Received: %v, %v", in.GetAmount(), in.GetCategory())
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	stmt, err := tx.Prepare("update expenses set category=?, amount=? where id=?")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer stmt.Close()
+
+	stmt.Exec(in.GetCategory(), in.GetAmount(), in.GetId())
+
+	err = tx.Commit()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return &pb.UpdateExpenseResponse{
+			Id: in.GetId(),
+		},
+		nil
 }
 
 func (s *server) CreateExpense(ctx context.Context, in *pb.CreateExenseRequest) (*pb.CreateExpenseResponse, error) {

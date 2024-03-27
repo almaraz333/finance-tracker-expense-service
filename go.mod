@@ -3,7 +3,7 @@ module github.com/almaraz333/finance-tracker-expenses
 go 1.22.1
 
 require (
-	github.com/almaraz333/finance-tracker-proto-files v0.1.5
+	github.com/almaraz333/finance-tracker-proto-files v0.1.10
 	github.com/mattn/go-sqlite3 v1.14.22
 	google.golang.org/grpc v1.62.1
 )
