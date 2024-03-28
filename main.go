@@ -25,15 +25,13 @@ func (s *server) DeleteExpense(ctx context.Context, in *pb.DeleteExpenseRequest)
 
 	tx, err := s.db.Begin()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	stmt, err := tx.Prepare("delete from expenses where id=?")
 	if err != nil {
-		log.Fatal(err.Error())
+		return nil, err
 	}
-
-	log.Printf("Deleting Expense with id: %v", in.GetId())
 
 	defer stmt.Close()
 
@@ -42,7 +40,7 @@ func (s *server) DeleteExpense(ctx context.Context, in *pb.DeleteExpenseRequest)
 	err = tx.Commit()
 
 	if err != nil {
-		log.Fatal(err.Error())
+		return nil, err
 	}
 	return &pb.DeleteExpenseResponse{
 			Id: in.GetId(),
@@ -67,7 +65,7 @@ func (s *server) GetExpenses(ctx context.Context, _ *pb.Empty) (*pb.GetExpensesR
 
 		err = rows.Scan(&id, &createdAt, &category, &amount)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 
 		res = append(res, &pb.ExpenseObject{
@@ -80,7 +78,7 @@ func (s *server) GetExpenses(ctx context.Context, _ *pb.Empty) (*pb.GetExpensesR
 
 	err = rows.Err()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	return &pb.GetExpensesResponse{
@@ -92,15 +90,13 @@ func (s *server) UpdateExpense(ctx context.Context, in *pb.UpdateExpenseRequest)
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	log.Printf("Received: %v, %v", in.GetAmount(), in.GetCategory())
-
 	tx, err := s.db.Begin()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	stmt, err := tx.Prepare("update expenses set category=?, amount=? where id=?")
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	defer stmt.Close()
@@ -110,7 +106,7 @@ func (s *server) UpdateExpense(ctx context.Context, in *pb.UpdateExpenseRequest)
 	err = tx.Commit()
 
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	return &pb.UpdateExpenseResponse{
@@ -123,15 +119,13 @@ func (s *server) CreateExpense(ctx context.Context, in *pb.CreateExenseRequest) 
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	log.Printf("Received: %v, %v", in.GetAmount(), in.GetCategory())
-
 	tx, err := s.db.Begin()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	stmt, err := tx.Prepare("insert into expenses(category, amount) values(?, ?)")
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	defer stmt.Close()
@@ -141,7 +135,7 @@ func (s *server) CreateExpense(ctx context.Context, in *pb.CreateExenseRequest) 
 	err = tx.Commit()
 
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	return &pb.CreateExpenseResponse{
